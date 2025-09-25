@@ -1,11 +1,8 @@
 {
   "name": "@akiflow/electron-panel-window",
-  "description": "Create Electron BrowserWindow's that act like Panels",
+  "description": "Create Electron BrowserWindow's that act like Panels - This is the custom fork of electron-panel-window with fixes to support latest Electron versions",
   "version": "8.0.2",
-  "author": "Tom Moor <tom@goabstract.com>",
-  "contributors": [
-    "Akiflow Inc. <developers@akiflow.com>"
-  ],
+  "author": "Ashu Bashir <https://github.com/Ashu-Bashir>",
   "main": "index.js",
   "scripts": {
     "start": "electron ./test/app/index.js",
@@ -26,13 +23,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/akiflow/electron-panel-window.git"
+    "url": "git+https://github.com/Ashu-Bashir/electron-panel-window.git"
   },
   "bugs": {
-    "url": "https://github.com/akiflow/electron-panel-window/issues"
+    "url": "https://github.com/Ashu-Bashir/electron-panel-window/issues"
   },
   "gypfile": true,
-  "homepage": "https://github.com/akiflow/electron-panel-window#readme",
+  "homepage": "https://github.com/Ashu-Bashir/electron-panel-window#readme",
   "directories": {
     "test": "test"
   },
