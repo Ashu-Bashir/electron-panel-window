@@ -1,6 +1,6 @@
 # electron-panel-window
 
-This is an updated fork of [@akiflow/electron-panel-window](https://github.com/akiflow/electron-panel-window) with extended compatibility support.
+An enhanced version of the original [@akiflow/electron-panel-window](https://github.com/akiflow/electron-panel-window) by **@ashubashir**, continuing development where Akiflow left off. The original package stopped support after Electron 21.x, but this fork extends compatibility to modern Electron versions (>21x) with active maintenance and improvements. 
 
 **Compatibility:**
 - ✅ **macOS Tahoe (26.x)** - Tested and working
