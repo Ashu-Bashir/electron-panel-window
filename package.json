@@ -1,7 +1,7 @@
 {
   "name": "@ashubashir/electron-panel-window",
   "description": "Create Electron BrowserWindow's that act like Panels - This is the custom fork of electron-panel-window with fixes to support latest Electron versions",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "Ashu Bashir <https://github.com/Ashu-Bashir>",
   "main": "index.js",
   "scripts": {
