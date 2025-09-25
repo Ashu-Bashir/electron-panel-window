@@ -1,8 +1,14 @@
 # electron-panel-window
 
-This fork of [electron-panel-window](https://github.com/goabstract/electron-panel-window).
-It works on **macOS Ventura** (tested).
-It works with **Electron 21.x**. (tested).
+This is an updated fork of [@akiflow/electron-panel-window](https://github.com/akiflow/electron-panel-window) with extended compatibility support.
+
+**Compatibility:**
+- ✅ **macOS Sequoia & Tahoe (26.x)** - Tested and working
+- ✅ **macOS Ventura** - Previously tested
+- ✅ **Electron 36.x** - Tested and working  
+- ✅ **Electron 21.x** - Previously supported
+
+This package has been updated to support much higher versions of Electron than the original Akiflow package, which was limited to Electron 21.x. The current version extends compatibility significantly and has been tested with modern Electron releases.
 
 **There are few caveats.**
 
@@ -28,7 +34,7 @@ Usually they can be fixed by:
 5. quit the app
 
 We have noticed less/no crashes if steps 2-5 are execture after a setTimout like:
-```javascript
+```
 win.hide()
 setTimeout(()=>{
     electronPanelWindow.makeKeyWindow(otherWin)
@@ -38,11 +44,17 @@ setTimeout(()=>{
 })
 ```
 
+## Improvements in This Fork
+
+- **Extended Electron Support**: Updated to work with Electron versions beyond 21.x, tested up to 36.x
+- **Modern macOS Compatibility**: Verified compatibility with macOS Tahoe (26.x) 
+- **Maintained Stability**: Preserves all existing functionality while expanding version support
+
 ## Other
-Removed win and linux support as it was empty in the first place.
+Removed Windows and Linux support as it was empty in the original implementation.
 
 You may want to include the package dynamically:
-```
+```javascript
 const electronPanelWindow = process.platform === 'darwin' ? require('electron-panel-window') : undefined
 ```
 
@@ -53,13 +65,13 @@ Feel free to open an issue, and report other "workarounds" to keep this working.
 Install
 
 ```bash
-npm install @akiflow/electron-panel-window
+npm install @ashubashir/electron-panel-window
 ```
 
 require
 
 ```bash
-const electronPanelWindow = process.platform === 'darwin' ? require('@akiflow/electron-panel-window') : undefined
+const electronPanelWindow = process.platform === 'darwin' ? require('@ashubashir/electron-panel-window') : undefined
 ```
 
 1. `makeKeyWindow(win)` focus the window without activating the application
@@ -67,13 +79,12 @@ const electronPanelWindow = process.platform === 'darwin' ? require('@akiflow/el
 3. `makeWindow(win)` transform the given panel in a window (useful before quitting)
 
 # Credits
-* [Akiflow Team](https://akiflow.com)
-* [rcclerigo](https://github.com/rcclerigo)
-* [Abstract](https://www.abstract.com/)
+* [AshuBashir] 
+* [Manirathnam]
 
 ---
 
 ### Old README of electron-panel-window
 Something may be useful, something may be outdated
 
-You can find it here: [https://github.com/goabstract/electron-panel-window/](https://github.com/goabstract/electron-panel-window/)
+You can find it here: [https://www.npmjs.com/package/@akiflow/electron-panel-window?activeTab=readme]
