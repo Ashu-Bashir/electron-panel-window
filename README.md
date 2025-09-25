@@ -3,7 +3,7 @@
 This is an updated fork of [@akiflow/electron-panel-window](https://github.com/akiflow/electron-panel-window) with extended compatibility support.
 
 **Compatibility:**
-- ✅ **macOS Sequoia & Tahoe (26.x)** - Tested and working
+- ✅ **macOS Tahoe (26.x)** - Tested and working
 - ✅ **macOS Ventura** - Previously tested
 - ✅ **Electron 36.x** - Tested and working  
 - ✅ **Electron 21.x** - Previously supported
@@ -53,11 +53,6 @@ setTimeout(()=>{
 ## Other
 Removed Windows and Linux support as it was empty in the original implementation.
 
-You may want to include the package dynamically:
-```javascript
-const electronPanelWindow = process.platform === 'darwin' ? require('electron-panel-window') : undefined
-```
-
 ### Issues
 Feel free to open an issue, and report other "workarounds" to keep this working.
 
@@ -79,12 +74,5 @@ const electronPanelWindow = process.platform === 'darwin' ? require('@ashubashir
 3. `makeWindow(win)` transform the given panel in a window (useful before quitting)
 
 # Credits
-* [AshuBashir] 
-* [Manirathnam]
-
----
-
-### Old README of electron-panel-window
-Something may be useful, something may be outdated
-
-You can find it here: [https://www.npmjs.com/package/@akiflow/electron-panel-window?activeTab=readme]
+* [AshuBashir] <https://github.com/ashu-Bashir> 
+* [Manirathnam] <https://github.com/manipandi>
