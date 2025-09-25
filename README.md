@@ -1,14 +1,23 @@
 # electron-panel-window
 
-An enhanced version of the original [@akiflow/electron-panel-window](https://github.com/akiflow/electron-panel-window) by **@ashubashir**, continuing development where Akiflow left off. The original package stopped support after Electron 21.x, but this fork extends compatibility to modern Electron versions (>21x) with active maintenance and improvements. 
+An enhanced version of [@akiflow/electron-panel-window](https://github.com/akiflow/electron-panel-window) by **@ashubashir**, building upon the solid foundation created by Akiflow. While the original package stopped supporting after Electron 21.x, this fork extends compatibility to modern Electron versions (>21x) with active maintenance and new improvements. Currently, tested upto Electron version 36x.
 
 **Compatibility:**
-- ✅ **macOS Tahoe (26.x)** - Tested and working
 - ✅ **macOS Ventura** - Previously tested
-- ✅ **Electron 36.x** - Tested and working  
 - ✅ **Electron 21.x** - Previously supported
+- ✅ **macOS Tahoe (26.x)** - Tested and working
+- ✅ **Electron 36.x** - Tested and working  
 
-This package has been updated to support much higher versions of Electron than the original Akiflow package, which was limited to Electron 21.x. The current version extends compatibility significantly and has been tested with modern Electron releases.
+## What are Panel Windows?
+
+Panel windows are special macOS windows that behave differently from regular application windows. They can appear above other windows without stealing focus from the active application, making them perfect for:
+
+- **Floating toolbars** and utility panels
+- **Always-on-top widgets** that don't interfere with workflow  
+- **Quick access menus** and popover-style interfaces
+- **Dashboard overlays** that complement the main application
+
+This package provides simple methods to transform regular Electron windows into native macOS panel windows, giving your app a more integrated and professional feel on Mac.
 
 **There are few caveats.**
 
