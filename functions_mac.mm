@@ -56,6 +56,48 @@
   // Headless mode is typically used for testing/automation, 
   // which doesn't apply to panel windows
 }
+- (void)cleanup {
+  // Prevent crash when Electron tries to call cleanup on panel windows
+  // This method is expected by newer versions of Electron but doesn't exist
+  // on NSPanel, so we provide a no-op implementation
+  NSLog(@"PROPanel cleanup called - no-op to prevent crash");
+}
+
+// Additional cleanup methods that Electron might expect
+- (void)cleanupWebContents {
+  // No-op to prevent crashes
+  NSLog(@"PROPanel cleanupWebContents called - no-op");
+}
+
+- (void)cleanupBrowserWindow {
+  // No-op to prevent crashes  
+  NSLog(@"PROPanel cleanupBrowserWindow called - no-op");
+}
+
+- (void)destroy {
+  // Another method Electron might call during destruction
+  NSLog(@"PROPanel destroy called - no-op");
+}
+
+- (void)_destroy {
+  // Private destroy method Electron might call
+  NSLog(@"PROPanel _destroy called - no-op");
+}
+
+// Forward any unknown method calls to prevent crashes
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
+  NSMethodSignature *signature = [super methodSignatureForSelector:aSelector];
+  if (!signature) {
+    // Create a dummy signature for any missing selector
+    signature = [NSMethodSignature signatureWithObjCTypes:"v@:"];
+  }
+  return signature;
+}
+
+- (void)forwardInvocation:(NSInvocation *)anInvocation {
+  // Log the missing method and do nothing
+  NSLog(@"PROPanel: Missing method %@ called - ignoring to prevent crash", NSStringFromSelector([anInvocation selector]));
+}
 @end
 
 Class electronWindowClass;
