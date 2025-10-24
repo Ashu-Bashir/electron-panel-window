@@ -84,11 +84,44 @@
   NSLog(@"PROPanel _destroy called - no-op");
 }
 
+// Additional Electron window methods that might be called
+- (void)closeWebContents {
+  NSLog(@"PROPanel closeWebContents called - no-op");
+}
+
+- (void)destroyWebContents {
+  NSLog(@"PROPanel destroyWebContents called - no-op");
+}
+
+- (void)_closeWebContents {
+  NSLog(@"PROPanel _closeWebContents called - no-op");
+}
+
+- (void)handleWindowClose {
+  NSLog(@"PROPanel handleWindowClose called - no-op");
+}
+
+- (void)willClose {
+  NSLog(@"PROPanel willClose called - no-op");
+}
+
+- (void)_willClose {
+  NSLog(@"PROPanel _willClose called - no-op");
+}
+
+// Override dealloc to log and safely clean up
+- (void)dealloc {
+  NSLog(@"PROPanel dealloc called");
+  [super dealloc];
+}
+
 // Forward any unknown method calls to prevent crashes
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
   NSMethodSignature *signature = [super methodSignatureForSelector:aSelector];
   if (!signature) {
+    NSLog(@"PROPanel: Creating dummy signature for missing method %@", NSStringFromSelector(aSelector));
     // Create a dummy signature for any missing selector
+    // This signature represents: void method(id self, SEL _cmd)
     signature = [NSMethodSignature signatureWithObjCTypes:"v@:"];
   }
   return signature;
@@ -97,6 +130,17 @@
 - (void)forwardInvocation:(NSInvocation *)anInvocation {
   // Log the missing method and do nothing
   NSLog(@"PROPanel: Missing method %@ called - ignoring to prevent crash", NSStringFromSelector([anInvocation selector]));
+  // Don't call anything - just return safely
+}
+
+// Override respondsToSelector to claim we can handle any selector
+- (BOOL)respondsToSelector:(SEL)aSelector {
+  BOOL responds = [super respondsToSelector:aSelector];
+  if (!responds) {
+    NSLog(@"PROPanel: Claiming to respond to missing selector %@ to prevent crash", NSStringFromSelector(aSelector));
+    return YES; // Claim we can handle it, then forward to forwardInvocation
+  }
+  return responds;
 }
 @end
 
