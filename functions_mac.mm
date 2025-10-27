@@ -2,7 +2,11 @@
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
 #import <objc/objc-runtime.h>
+#import <objc/runtime.h>
 #include "functions.h"
+
+// Associated object key for storing original window class per window
+static const void *kOriginalWindowClassKey = &kOriginalWindowClassKey;
 
 @interface PROPanel : NSWindow
 @end
@@ -109,21 +113,35 @@
   NSLog(@"PROPanel _willClose called - no-op");
 }
 
-// Override dealloc to log and safely clean up
+// Override dealloc to log and safely clean up - ARC safe version
 - (void)dealloc {
   NSLog(@"PROPanel dealloc called");
+#if !__has_feature(objc_arc)
   [super dealloc];
+#endif
 }
 
-// Forward any unknown method calls to prevent crashes
+// Forward any unknown method calls to prevent crashes - safer version
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
   NSMethodSignature *signature = [super methodSignatureForSelector:aSelector];
-  if (!signature) {
-    NSLog(@"PROPanel: Creating dummy signature for missing method %@", NSStringFromSelector(aSelector));
-    // Create a dummy signature for any missing selector
-    // This signature represents: void method(id self, SEL _cmd)
-    signature = [NSMethodSignature signatureWithObjCTypes:"v@:"];
+  if (signature) return signature;
+
+  // Provide void-returning signature for our known no-arg methods:
+  if (sel_isEqual(aSelector, @selector(cleanup)) ||
+      sel_isEqual(aSelector, @selector(cleanupWebContents)) ||
+      sel_isEqual(aSelector, @selector(cleanupBrowserWindow)) ||
+      sel_isEqual(aSelector, @selector(destroy)) ||
+      sel_isEqual(aSelector, @selector(_destroy)) ||
+      sel_isEqual(aSelector, @selector(closeWebContents)) ||
+      sel_isEqual(aSelector, @selector(destroyWebContents)) ||
+      sel_isEqual(aSelector, @selector(_closeWebContents)) ||
+      sel_isEqual(aSelector, @selector(handleWindowClose)) ||
+      sel_isEqual(aSelector, @selector(willClose)) ||
+      sel_isEqual(aSelector, @selector(_willClose)) ||
+      sel_isEqual(aSelector, @selector(disableHeadlessMode))) {
+    return [NSMethodSignature signatureWithObjCTypes:"v@:"];
   }
+
   return signature;
 }
 
@@ -133,18 +151,26 @@
   // Don't call anything - just return safely
 }
 
-// Override respondsToSelector to claim we can handle any selector
+// Override respondsToSelector - only claim we can handle specific selectors
 - (BOOL)respondsToSelector:(SEL)aSelector {
-  BOOL responds = [super respondsToSelector:aSelector];
-  if (!responds) {
-    NSLog(@"PROPanel: Claiming to respond to missing selector %@ to prevent crash", NSStringFromSelector(aSelector));
-    return YES; // Claim we can handle it, then forward to forwardInvocation
+  // Only claim to respond for selectors we actually expect to handle/forward
+  if (sel_isEqual(aSelector, @selector(cleanup)) ||
+      sel_isEqual(aSelector, @selector(cleanupWebContents)) ||
+      sel_isEqual(aSelector, @selector(cleanupBrowserWindow)) ||
+      sel_isEqual(aSelector, @selector(destroy)) ||
+      sel_isEqual(aSelector, @selector(_destroy)) ||
+      sel_isEqual(aSelector, @selector(closeWebContents)) ||
+      sel_isEqual(aSelector, @selector(destroyWebContents)) ||
+      sel_isEqual(aSelector, @selector(_closeWebContents)) ||
+      sel_isEqual(aSelector, @selector(handleWindowClose)) ||
+      sel_isEqual(aSelector, @selector(willClose)) ||
+      sel_isEqual(aSelector, @selector(_willClose)) ||
+      sel_isEqual(aSelector, @selector(disableHeadlessMode))) {
+    return YES;
   }
-  return responds;
+  return [super respondsToSelector:aSelector];
 }
 @end
-
-Class electronWindowClass;
 
 NAN_METHOD(MakePanel) {
   v8::Local<v8::Object> handleBuffer = info[0].As<v8::Object>();
@@ -157,23 +183,21 @@ NAN_METHOD(MakePanel) {
   if (!mainContentView)
       return info.GetReturnValue().Set(false);
 
-  electronWindowClass = [mainContentView.window class];
-
-//   NSLog(@"class of main window before = %@", object_getClass(mainContentView.window));
-
   NSWindow *nswindow = [mainContentView window];
+  
+  // Store the original class per window using associated objects
+  Class originalClass = object_getClass(nswindow);
+  objc_setAssociatedObject(nswindow, kOriginalWindowClassKey, (__bridge id)originalClass, OBJC_ASSOCIATION_ASSIGN);
+  
+  NSLog(@"MakePanel: Storing original class %@ for window %p", NSStringFromClass(originalClass), nswindow);
+
   nswindow.titlebarAppearsTransparent = true;
   nswindow.titleVisibility = (NSWindowTitleVisibility)1;
 
-//   NSLog(@"stylemask = %ld", mainContentView.window.styleMask);
-
   // Convert the NSWindow class to PROPanel
-  object_setClass(mainContentView.window, [PROPanel class]);
-
-//   NSLog(@"class of main window after = %@", object_getClass(mainContentView.window));
-//   NSLog(@"stylemask after = %ld", mainContentView.window.styleMask);
-
-
+  object_setClass(nswindow, [PROPanel class]);
+  
+  NSLog(@"MakePanel: Changed window %p class to PROPanel", nswindow);
 
   return info.GetReturnValue().Set(true);
 }
@@ -196,7 +220,6 @@ NAN_METHOD(MakeKeyWindow) {
 
 
 NAN_METHOD(MakeWindow) {
-
   v8::Local<v8::Object> handleBuffer = info[0].As<v8::Object>();
   v8::Isolate* isolate = info.GetIsolate();
   v8::HandleScope scope(isolate);
@@ -204,13 +227,22 @@ NAN_METHOD(MakeWindow) {
   char* buffer = node::Buffer::Data(handleBuffer);
   NSView* mainContentView = *reinterpret_cast<NSView**>(buffer);
 
-    if (!mainContentView)
+  if (!mainContentView)
       return info.GetReturnValue().Set(false);
 
   NSWindow* newWindow = mainContentView.window;
 
-  // Convert the NSPanel class to whatever it was before
-  object_setClass(newWindow, electronWindowClass);
+  // Restore the original class from associated object
+  id stored = objc_getAssociatedObject(newWindow, kOriginalWindowClassKey);
+  if (stored) {
+    Class originalClass = (__bridge Class)stored;
+    NSLog(@"MakeWindow: Restoring window %p to original class %@", newWindow, NSStringFromClass(originalClass));
+    object_setClass(newWindow, originalClass);
+    // Clear the stored association
+    objc_setAssociatedObject(newWindow, kOriginalWindowClassKey, nil, OBJC_ASSOCIATION_ASSIGN);
+  } else {
+    NSLog(@"MakeWindow: Warning - no original class stored for window %p", newWindow);
+  }
 
   return info.GetReturnValue().Set(true);
 }
