@@ -5,172 +5,71 @@
 #import <objc/runtime.h>
 #include "functions.h"
 
-// Associated object key for storing original window class per window
-static const void *kOriginalWindowClassKey = &kOriginalWindowClassKey;
+// Key for storing swizzled state - moved up here for better organization
 
-@interface PROPanel : NSWindow
+// Instead of class swapping, we'll use method swizzling to safely override behavior
+@interface NSWindow (PanelAdditions)
+- (NSWindowStyleMask)panel_styleMask;
+- (NSWindowCollectionBehavior)panel_collectionBehavior;
+- (BOOL)panel_isFloatingPanel;
+- (NSWindowLevel)panel_level;
+- (BOOL)panel_canBecomeKeyWindow;
+- (BOOL)panel_canBecomeMainWindow;
+- (BOOL)panel_needsPanelToBecomeKey;
+- (BOOL)panel_acceptsFirstResponder;
 @end
 
-@implementation PROPanel
-- (NSWindowStyleMask)styleMask {
+@implementation NSWindow (PanelAdditions)
+- (NSWindowStyleMask)panel_styleMask {
   return NSWindowStyleMaskTexturedBackground | NSWindowStyleMaskResizable | NSWindowStyleMaskFullSizeContentView | NSWindowStyleMaskNonactivatingPanel;
 }
-- (NSWindowCollectionBehavior)collectionBehavior {
+- (NSWindowCollectionBehavior)panel_collectionBehavior {
   return NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary;
 }
-- (BOOL)isFloatingPanel {
+- (BOOL)panel_isFloatingPanel {
   return YES;
 }
-- (NSWindowLevel)level {
+- (NSWindowLevel)panel_level {
   return NSFloatingWindowLevel;
 }
-- (BOOL)canBecomeKeyWindow {
+- (BOOL)panel_canBecomeKeyWindow {
   return YES;
 }
-- (BOOL)canBecomeMainWindow {
+- (BOOL)panel_canBecomeMainWindow {
   return YES;
 }
-- (BOOL)needsPanelToBecomeKey {
+- (BOOL)panel_needsPanelToBecomeKey {
   return YES;
 }
-- (BOOL)acceptsFirstResponder {
+- (BOOL)panel_acceptsFirstResponder {
   return YES;
-}
-- (void)removeObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath context:(nullable void *)context {
-  // macOS Big Sur attempts to remove an observer for the NSTitlebarView that doesn't exist.
-  // This is due to us changing the class from NSWindow -> NSPanel at runtime, it's possible
-  // there is assumed setup that doesn't happen. Details of the exception this is avoiding are
-  // here: https://github.com/goabstract/electron-panel-window/issues/6
-  if ([keyPath isEqualToString:@"_titlebarBackdropGroupName"]) {
-    // NSLog(@"removeObserver ignored");
-    return;
-  }
-
-  if (context) {
-    [super removeObserver:observer forKeyPath:keyPath context:context];
-  } else {
-    [super removeObserver:observer forKeyPath:keyPath];
-  }
-}
-- (void)removeObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath {
-  [self removeObserver:observer forKeyPath:keyPath context:NULL];
-}
-- (void)disableHeadlessMode {
-  // Electron 36+ compatibility - no-op for panel windows
-  // Headless mode is typically used for testing/automation, 
-  // which doesn't apply to panel windows
-}
-- (void)cleanup {
-  // Prevent crash when Electron tries to call cleanup on panel windows
-  // This method is expected by newer versions of Electron but doesn't exist
-  // on NSPanel, so we provide a no-op implementation
-  NSLog(@"PROPanel cleanup called - no-op to prevent crash");
-}
-
-// Additional cleanup methods that Electron might expect
-- (void)cleanupWebContents {
-  // No-op to prevent crashes
-  NSLog(@"PROPanel cleanupWebContents called - no-op");
-}
-
-- (void)cleanupBrowserWindow {
-  // No-op to prevent crashes  
-  NSLog(@"PROPanel cleanupBrowserWindow called - no-op");
-}
-
-- (void)destroy {
-  // Another method Electron might call during destruction
-  NSLog(@"PROPanel destroy called - no-op");
-}
-
-- (void)_destroy {
-  // Private destroy method Electron might call
-  NSLog(@"PROPanel _destroy called - no-op");
-}
-
-// Additional Electron window methods that might be called
-- (void)closeWebContents {
-  NSLog(@"PROPanel closeWebContents called - no-op");
-}
-
-- (void)destroyWebContents {
-  NSLog(@"PROPanel destroyWebContents called - no-op");
-}
-
-- (void)_closeWebContents {
-  NSLog(@"PROPanel _closeWebContents called - no-op");
-}
-
-- (void)handleWindowClose {
-  NSLog(@"PROPanel handleWindowClose called - no-op");
-}
-
-- (void)willClose {
-  NSLog(@"PROPanel willClose called - no-op");
-}
-
-- (void)_willClose {
-  NSLog(@"PROPanel _willClose called - no-op");
-}
-
-// Override dealloc to log and safely clean up - ARC safe version
-- (void)dealloc {
-  NSLog(@"PROPanel dealloc called");
-#if !__has_feature(objc_arc)
-  [super dealloc];
-#endif
-}
-
-// Forward any unknown method calls to prevent crashes - safer version
-- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
-  NSMethodSignature *signature = [super methodSignatureForSelector:aSelector];
-  if (signature) return signature;
-
-  // Provide void-returning signature for our known no-arg methods:
-  if (sel_isEqual(aSelector, @selector(cleanup)) ||
-      sel_isEqual(aSelector, @selector(cleanupWebContents)) ||
-      sel_isEqual(aSelector, @selector(cleanupBrowserWindow)) ||
-      sel_isEqual(aSelector, @selector(destroy)) ||
-      sel_isEqual(aSelector, @selector(_destroy)) ||
-      sel_isEqual(aSelector, @selector(closeWebContents)) ||
-      sel_isEqual(aSelector, @selector(destroyWebContents)) ||
-      sel_isEqual(aSelector, @selector(_closeWebContents)) ||
-      sel_isEqual(aSelector, @selector(handleWindowClose)) ||
-      sel_isEqual(aSelector, @selector(willClose)) ||
-      sel_isEqual(aSelector, @selector(_willClose)) ||
-      sel_isEqual(aSelector, @selector(disableHeadlessMode))) {
-    return [NSMethodSignature signatureWithObjCTypes:"v@:"];
-  }
-
-  return signature;
-}
-
-- (void)forwardInvocation:(NSInvocation *)anInvocation {
-  // Log the missing method and do nothing
-  NSLog(@"PROPanel: Missing method %@ called - ignoring to prevent crash", NSStringFromSelector([anInvocation selector]));
-  // Don't call anything - just return safely
-}
-
-// Override respondsToSelector - only claim we can handle specific selectors
-- (BOOL)respondsToSelector:(SEL)aSelector {
-  // Only claim to respond for selectors we actually expect to handle/forward
-  if (sel_isEqual(aSelector, @selector(cleanup)) ||
-      sel_isEqual(aSelector, @selector(cleanupWebContents)) ||
-      sel_isEqual(aSelector, @selector(cleanupBrowserWindow)) ||
-      sel_isEqual(aSelector, @selector(destroy)) ||
-      sel_isEqual(aSelector, @selector(_destroy)) ||
-      sel_isEqual(aSelector, @selector(closeWebContents)) ||
-      sel_isEqual(aSelector, @selector(destroyWebContents)) ||
-      sel_isEqual(aSelector, @selector(_closeWebContents)) ||
-      sel_isEqual(aSelector, @selector(handleWindowClose)) ||
-      sel_isEqual(aSelector, @selector(willClose)) ||
-      sel_isEqual(aSelector, @selector(_willClose)) ||
-      sel_isEqual(aSelector, @selector(disableHeadlessMode))) {
-    return YES;
-  }
-  return [super respondsToSelector:aSelector];
 }
 @end
+
+// We no longer need the PROPanel class since we're using method swizzling
+// This is much safer than runtime class swapping
+
+// Helper function to swizzle methods safely
+void swizzleMethod(Class cls, SEL originalSelector, SEL swizzledSelector) {
+  Method originalMethod = class_getInstanceMethod(cls, originalSelector);
+  Method swizzledMethod = class_getInstanceMethod(cls, swizzledSelector);
+  
+  if (!originalMethod || !swizzledMethod) {
+    NSLog(@"Failed to swizzle method %@ on class %@", NSStringFromSelector(originalSelector), NSStringFromClass(cls));
+    return;
+  }
+  
+  BOOL didAddMethod = class_addMethod(cls, originalSelector, method_getImplementation(swizzledMethod), method_getTypeEncoding(swizzledMethod));
+  
+  if (didAddMethod) {
+    class_replaceMethod(cls, swizzledSelector, method_getImplementation(originalMethod), method_getTypeEncoding(originalMethod));
+  } else {
+    method_exchangeImplementations(originalMethod, swizzledMethod);
+  }
+}
+
+// Key for storing swizzled state
+static const void *kPanelSwizzledKey = &kPanelSwizzledKey;
 
 NAN_METHOD(MakePanel) {
   v8::Local<v8::Object> handleBuffer = info[0].As<v8::Object>();
@@ -185,19 +84,35 @@ NAN_METHOD(MakePanel) {
 
   NSWindow *nswindow = [mainContentView window];
   
-  // Store the original class per window using associated objects
-  Class originalClass = object_getClass(nswindow);
-  objc_setAssociatedObject(nswindow, kOriginalWindowClassKey, (__bridge id)originalClass, OBJC_ASSOCIATION_ASSIGN);
+  // Check if already swizzled
+  id swizzled = objc_getAssociatedObject(nswindow, kPanelSwizzledKey);
+  if (swizzled) {
+    NSLog(@"MakePanel: Window %p already converted to panel", nswindow);
+    return info.GetReturnValue().Set(true);
+  }
   
-  NSLog(@"MakePanel: Storing original class %@ for window %p", NSStringFromClass(originalClass), nswindow);
+  NSLog(@"MakePanel: Converting window %p to panel using method swizzling", nswindow);
 
   nswindow.titlebarAppearsTransparent = true;
   nswindow.titleVisibility = (NSWindowTitleVisibility)1;
 
-  // Convert the NSWindow class to PROPanel
-  object_setClass(nswindow, [PROPanel class]);
+  // Use method swizzling instead of class swapping - much safer
+  Class windowClass = [nswindow class];
   
-  NSLog(@"MakePanel: Changed window %p class to PROPanel", nswindow);
+  // Swizzle the methods to panel behavior
+  swizzleMethod(windowClass, @selector(styleMask), @selector(panel_styleMask));
+  swizzleMethod(windowClass, @selector(collectionBehavior), @selector(panel_collectionBehavior));
+  swizzleMethod(windowClass, @selector(isFloatingPanel), @selector(panel_isFloatingPanel));
+  swizzleMethod(windowClass, @selector(level), @selector(panel_level));
+  swizzleMethod(windowClass, @selector(canBecomeKeyWindow), @selector(panel_canBecomeKeyWindow));
+  swizzleMethod(windowClass, @selector(canBecomeMainWindow), @selector(panel_canBecomeMainWindow));
+  swizzleMethod(windowClass, @selector(needsPanelToBecomeKey), @selector(panel_needsPanelToBecomeKey));
+  swizzleMethod(windowClass, @selector(acceptsFirstResponder), @selector(panel_acceptsFirstResponder));
+  
+  // Mark as swizzled
+  objc_setAssociatedObject(nswindow, kPanelSwizzledKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  
+  NSLog(@"MakePanel: Successfully swizzled window %p methods", nswindow);
 
   return info.GetReturnValue().Set(true);
 }
@@ -232,17 +147,31 @@ NAN_METHOD(MakeWindow) {
 
   NSWindow* newWindow = mainContentView.window;
 
-  // Restore the original class from associated object
-  id stored = objc_getAssociatedObject(newWindow, kOriginalWindowClassKey);
-  if (stored) {
-    Class originalClass = (__bridge Class)stored;
-    NSLog(@"MakeWindow: Restoring window %p to original class %@", newWindow, NSStringFromClass(originalClass));
-    object_setClass(newWindow, originalClass);
-    // Clear the stored association
-    objc_setAssociatedObject(newWindow, kOriginalWindowClassKey, nil, OBJC_ASSOCIATION_ASSIGN);
-  } else {
-    NSLog(@"MakeWindow: Warning - no original class stored for window %p", newWindow);
+  // Check if swizzled
+  id swizzled = objc_getAssociatedObject(newWindow, kPanelSwizzledKey);
+  if (!swizzled) {
+    NSLog(@"MakeWindow: Window %p was not swizzled", newWindow);
+    return info.GetReturnValue().Set(true);
   }
+
+  NSLog(@"MakeWindow: Restoring window %p from panel behavior", newWindow);
+
+  Class windowClass = [newWindow class];
+  
+  // Unswizzle the methods back to original behavior
+  swizzleMethod(windowClass, @selector(styleMask), @selector(panel_styleMask));
+  swizzleMethod(windowClass, @selector(collectionBehavior), @selector(panel_collectionBehavior));
+  swizzleMethod(windowClass, @selector(isFloatingPanel), @selector(panel_isFloatingPanel));
+  swizzleMethod(windowClass, @selector(level), @selector(panel_level));
+  swizzleMethod(windowClass, @selector(canBecomeKeyWindow), @selector(panel_canBecomeKeyWindow));
+  swizzleMethod(windowClass, @selector(canBecomeMainWindow), @selector(panel_canBecomeMainWindow));
+  swizzleMethod(windowClass, @selector(needsPanelToBecomeKey), @selector(panel_needsPanelToBecomeKey));
+  swizzleMethod(windowClass, @selector(acceptsFirstResponder), @selector(panel_acceptsFirstResponder));
+  
+  // Clear the swizzled marker
+  objc_setAssociatedObject(newWindow, kPanelSwizzledKey, nil, OBJC_ASSOCIATION_ASSIGN);
+  
+  NSLog(@"MakeWindow: Successfully restored window %p methods", newWindow);
 
   return info.GetReturnValue().Set(true);
 }
