@@ -109,36 +109,75 @@
   NSLog(@"PROPanel _willClose called - no-op");
 }
 
-// Override dealloc to log and safely clean up
+// Override dealloc to safely clean up without calling [super dealloc]
 - (void)dealloc {
   NSLog(@"PROPanel dealloc called");
-  [super dealloc];
 }
 
 // Forward any unknown method calls to prevent crashes
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
   NSMethodSignature *signature = [super methodSignatureForSelector:aSelector];
   if (!signature) {
-    NSLog(@"PROPanel: Creating dummy signature for missing method %@", NSStringFromSelector(aSelector));
-    // Create a dummy signature for any missing selector
-    // This signature represents: void method(id self, SEL _cmd)
-    signature = [NSMethodSignature signatureWithObjCTypes:"v@:"];
+    // Create appropriate signatures based on common return types
+    NSString *selectorName = NSStringFromSelector(aSelector);
+    
+    // Methods that return integers/display IDs
+    if ([selectorName containsString:@"displayID"] || 
+        [selectorName containsString:@"DisplayID"]) {
+      // unsigned int return type: I@:
+      signature = [NSMethodSignature signatureWithObjCTypes:"I@:"];
+    }
+    // Methods that return BOOL
+    else if ([selectorName hasPrefix:@"is"] || 
+             [selectorName hasPrefix:@"has"] ||
+             [selectorName hasPrefix:@"can"] ||
+             [selectorName hasPrefix:@"should"] ||
+             [selectorName containsString:@"Enabled"]) {
+      // BOOL return type: c@:
+      signature = [NSMethodSignature signatureWithObjCTypes:"c@:"];
+    }
+    // Methods that return objects/arrays
+    else if ([selectorName containsString:@"touchBar"] ||
+             [selectorName containsString:@"TouchBar"]) {
+      // id return type: @@:
+      signature = [NSMethodSignature signatureWithObjCTypes:"@@:"];
+    }
+    // Default: void return
+    else {
+      signature = [NSMethodSignature signatureWithObjCTypes:"v@:"];
+    }
   }
   return signature;
 }
 
 - (void)forwardInvocation:(NSInvocation *)anInvocation {
-  // Log the missing method and do nothing
-  NSLog(@"PROPanel: Missing method %@ called - ignoring to prevent crash", NSStringFromSelector([anInvocation selector]));
-  // Don't call anything - just return safely
+  NSString *selectorName = NSStringFromSelector([anInvocation selector]);
+  
+  // Set appropriate return values for different method types
+  const char *returnType = [[anInvocation methodSignature] methodReturnType];
+  
+  if (strcmp(returnType, "c") == 0) {
+    // BOOL return - return NO
+    BOOL returnValue = NO;
+    [anInvocation setReturnValue:&returnValue];
+  } else if (strcmp(returnType, "I") == 0 || strcmp(returnType, "i") == 0) {
+    // Integer return - return 0
+    NSUInteger returnValue = 0;
+    [anInvocation setReturnValue:&returnValue];
+  } else if (strcmp(returnType, "@") == 0) {
+    // Object return - return nil
+    id returnValue = nil;
+    [anInvocation setReturnValue:&returnValue];
+  }
+  // For void returns, no need to set anything
 }
 
 // Override respondsToSelector to claim we can handle any selector
 - (BOOL)respondsToSelector:(SEL)aSelector {
   BOOL responds = [super respondsToSelector:aSelector];
   if (!responds) {
-    NSLog(@"PROPanel: Claiming to respond to missing selector %@ to prevent crash", NSStringFromSelector(aSelector));
-    return YES; // Claim we can handle it, then forward to forwardInvocation
+    // Claim we can handle it, then forward to forwardInvocation
+    return YES;
   }
   return responds;
 }
