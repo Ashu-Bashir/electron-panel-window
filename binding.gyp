@@ -24,14 +24,10 @@
             },
             "xcode_settings": {
                 "OTHER_CFLAGS": [
-                    "-x objective-c++ -stdlib=libc++ -g"
-                ],
-                "OTHER_CPLUSPLUSFLAGS": [
-                    "-g"
+                    "-x objective-c++ -stdlib=libc++"
                 ],
                 "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
-                "MACOSX_DEPLOYMENT_TARGET": "10.13",
-                "GCC_GENERATE_DEBUGGING_SYMBOLS": "YES"
+                "MACOSX_DEPLOYMENT_TARGET": "10.13"
             }
         }
     ],
