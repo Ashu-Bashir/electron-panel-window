@@ -183,6 +183,36 @@
 }
 @end
 
+// --- Safe swizzle helper ---
+void SafeCleanupSwizzle(Class targetClass) {
+  SEL cleanupSel = @selector(cleanup);
+  Method existing = class_getInstanceMethod(targetClass, cleanupSel);
+
+  if (!existing) {
+    IMP noopImp = imp_implementationWithBlock(^(id _self) {
+      NSLog(@"Safe cleanup called - no-op for %@", _self);
+    });
+    class_addMethod(targetClass, cleanupSel, noopImp, "v@:");
+  }
+
+  SEL cleanupWebContentsSel = @selector(cleanupWebContents);
+  if (!class_getInstanceMethod(targetClass, cleanupWebContentsSel)) {
+    IMP noopImp2 = imp_implementationWithBlock(^(id _self) {
+      NSLog(@"Safe cleanupWebContents called - no-op for %@", _self);
+    });
+    class_addMethod(targetClass, cleanupWebContentsSel, noopImp2, "v@:");
+  }
+
+  SEL destroySel = @selector(destroy);
+  if (!class_getInstanceMethod(targetClass, destroySel)) {
+    IMP noopImp3 = imp_implementationWithBlock(^(id _self) {
+      NSLog(@"Safe destroy called - no-op for %@", _self);
+    });
+    class_addMethod(targetClass, destroySel, noopImp3, "v@:");
+  }
+}
+
+
 Class electronWindowClass;
 
 NAN_METHOD(MakePanel) {
@@ -196,26 +226,40 @@ NAN_METHOD(MakePanel) {
   if (!mainContentView)
       return info.GetReturnValue().Set(false);
 
-  electronWindowClass = [mainContentView.window class];
-
-//   NSLog(@"class of main window before = %@", object_getClass(mainContentView.window));
-
   NSWindow *nswindow = [mainContentView window];
-  nswindow.titlebarAppearsTransparent = true;
+  electronWindowClass = [nswindow class];
+
+  // Dynamically create a subclass only once
+  static Class DynamicPanelClass = Nil;
+  if (!DynamicPanelClass) {
+    NSString *subclassName = [NSString stringWithFormat:@"%@_PROPanel", NSStringFromClass(electronWindowClass)];
+    DynamicPanelClass = objc_allocateClassPair(electronWindowClass, [subclassName UTF8String], 0);
+
+    // Copy methods from PROPanel to new subclass
+    unsigned int methodCount = 0;
+    Method *methods = class_copyMethodList([PROPanel class], &methodCount);
+    for (unsigned int i = 0; i < methodCount; i++) {
+      class_addMethod(DynamicPanelClass,
+                      method_getName(methods[i]),
+                      method_getImplementation(methods[i]),
+                      method_getTypeEncoding(methods[i]));
+    }
+    free(methods);
+    objc_registerClassPair(DynamicPanelClass);
+  }
+
+  // Assign the subclass safely
+  object_setClass(nswindow, DynamicPanelClass);
+
+  // Apply panel appearance tweaks
+  nswindow.titlebarAppearsTransparent = YES;
   nswindow.titleVisibility = (NSWindowTitleVisibility)1;
-
-//   NSLog(@"stylemask = %ld", mainContentView.window.styleMask);
-
-  // Convert the NSWindow class to PROPanel
-  object_setClass(mainContentView.window, [PROPanel class]);
-
-//   NSLog(@"class of main window after = %@", object_getClass(mainContentView.window));
-//   NSLog(@"stylemask after = %ld", mainContentView.window.styleMask);
-
-
+  nswindow.level = NSFloatingWindowLevel;
+  nswindow.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary;
 
   return info.GetReturnValue().Set(true);
 }
+
 
 NAN_METHOD(MakeKeyWindow) {
   v8::Local<v8::Object> handleBuffer = info[0].As<v8::Object>();
@@ -252,4 +296,35 @@ NAN_METHOD(MakeWindow) {
   object_setClass(newWindow, electronWindowClass);
 
   return info.GetReturnValue().Set(true);
+}
+
+NAN_METHOD(Destroy) {
+  v8::Local<v8::Object> browserWindow = info[0].As<v8::Object>();
+  if (browserWindow.IsEmpty() || !browserWindow->IsObject()) {
+    Nan::ThrowTypeError("Argument must be a BrowserWindow object");
+    return;
+  }
+
+  v8::Local<v8::Value> handleValue = Nan::Get(browserWindow, Nan::New("getNativeWindowHandle").ToLocalChecked()).ToLocalChecked();
+  if (handleValue.IsEmpty() || !handleValue->IsFunction()) {
+    Nan::ThrowTypeError("Could not get getNativeWindowHandle function");
+    return;
+  }
+
+  v8::Local<v8::Function> getNativeWindowHandle = handleValue.As<v8::Function>();
+  v8::Local<v8::Value> argv[] = {};
+  v8::Local<v8::Value> result = Nan::Call(getNativeWindowHandle, browserWindow, 0, argv).ToLocalChecked();
+
+  if (result.IsEmpty() || !result->IsObject()) {
+    Nan::ThrowTypeError("Could not get native window handle");
+    return;
+  }
+
+  v8::Local<v8::Object> handleBuffer = result.As<v8::Object>();
+  void* handle = node::Buffer::Data(handleBuffer);
+  NSWindow* window = (NSWindow*)handle;
+
+  if (window) {
+    [window close];
+  }
 }

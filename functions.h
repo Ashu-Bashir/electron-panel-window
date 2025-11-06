@@ -4,7 +4,8 @@
 #include <nan.h>
 
 NAN_METHOD(MakePanel);
-NAN_METHOD(MakeKeyWindow);
 NAN_METHOD(MakeWindow);
+NAN_METHOD(MakeKeyWindow);
+NAN_METHOD(Destroy);
 
 #endif

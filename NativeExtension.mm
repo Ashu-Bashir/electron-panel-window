@@ -10,6 +10,8 @@ NAN_MODULE_INIT(InitAll) {
     Nan::GetFunction(Nan::New<FunctionTemplate>(MakeWindow)).ToLocalChecked());
   Nan::Set(target, Nan::New("MakeKeyWindow").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(MakeKeyWindow)).ToLocalChecked());
+  Nan::Set(target, Nan::New("Destroy").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(Destroy)).ToLocalChecked());
 }
 
 NODE_MODULE(NativeExtension, InitAll)
