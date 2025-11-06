@@ -8,12 +8,13 @@
     "start": "electron ./test/app/index.js",
     "configure": "node-gyp configure",
     "prepare": "node-gyp build",
-    "build": "node-gyp rebuild --release --target=36.9.1 --dist-url=https://electronjs.org/headers",
+    "build": "node-gyp rebuild --release --target=37.7.0 --dist-url=https://electronjs.org/headers",
     "test": "mocha",
     "install": "node-gyp rebuild"
   },
   "devDependencies": {
-    "electron": "^36.9.1",
+    "@electron/rebuild": "^4.0.1",
+    "electron": "^37.7.0",
     "mocha": "^10.8.2",
     "node-gyp": "11.4.2"
   },
