@@ -1,26 +1,26 @@
 {
   "name": "@ashubashir/electron-panel-window",
   "description": "Create Electron BrowserWindow's that act like Panels - This is the custom fork of electron-panel-window with fixes to support latest Electron versions",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "author": "Ashu Bashir <https://github.com/Ashu-Bashir>",
   "main": "index.js",
   "scripts": {
     "start": "electron ./test/app/index.js",
     "configure": "node-gyp configure",
     "prepare": "node-gyp build",
-    "build": "node-gyp rebuild --release --target=37.7.0 --dist-url=https://electronjs.org/headers",
+    "build": "node-gyp rebuild --release --target=40.6.1 --dist-url=https://electronjs.org/headers",
     "test": "mocha",
     "install": "node-gyp rebuild"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.1",
-    "electron": "^37.7.0",
+    "electron": "^40.6.1",
     "mocha": "^10.8.2",
     "node-gyp": "11.4.2"
   },
   "dependencies": {
     "bindings": "1.5.0",
-    "nan": "2.23.0"
+    "nan": "2.25.0"
   },
   "repository": {
     "type": "git",
