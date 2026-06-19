@@ -7,11 +7,12 @@
   "scripts": {
     "start": "electron ./test/app/index.js",
     "configure": "node-gyp configure",
-    "prepare": "node-gyp build",
-    "build": "node-gyp rebuild --release --target=42.4.1 --dist-url=https://electronjs.org/headers",
+    "patch": "node scripts/patch-nan.js",
+    "prepare": "npm run patch && node-gyp rebuild --release --target=42.4.1 --dist-url=https://electronjs.org/headers",
+    "build": "npm run patch && node-gyp rebuild --release --target=42.4.1 --dist-url=https://electronjs.org/headers",
     "test": "mocha",
-    "postinstall": "node scripts/patch-nan.js",
-    "install": "node-gyp rebuild"
+    "postinstall": "npm run patch && node-gyp rebuild --release --target=42.4.1 --dist-url=https://electronjs.org/headers",
+    "install": "npm run patch && node-gyp rebuild --release --target=42.4.1 --dist-url=https://electronjs.org/headers"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.1",
