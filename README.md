@@ -1,12 +1,12 @@
 # electron-panel-window
 
-An enhanced version of [@akiflow/electron-panel-window](https://github.com/akiflow/electron-panel-window) by **@ashubashir**, building upon the solid foundation created by Akiflow. While the original package stopped supporting after Electron 21.x, this fork extends compatibility to modern Electron versions (>21x) with active maintenance and new improvements. Currently, tested upto Electron version 36x.
+An enhanced version of [@akiflow/electron-panel-window](https://github.com/akiflow/electron-panel-window) by **@ashubashir**, building upon the solid foundation created by Akiflow. While the original package stopped supporting after Electron 21.x, this fork extends compatibility to modern Electron versions (>21x) with active maintenance and new improvements. Currently, tested upto Electron version 42x.
 
 **Compatibility:**
 - ✅ **macOS Ventura** - Previously tested
 - ✅ **Electron 21.x** - Previously supported
 - ✅ **macOS Tahoe (26.x)** - Tested and working
-- ✅ **Electron 36.x** - Tested and working  
+- ✅ **Electron 42.x** - Tested and working  
 
 ## What are Panel Windows?
 
