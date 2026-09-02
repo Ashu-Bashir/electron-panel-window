@@ -24,7 +24,8 @@
             },
             "xcode_settings": {
                 "OTHER_CFLAGS": [
-                    "-x objective-c++ -stdlib=libc++"
+                    "-x objective-c++ -stdlib=libc++",
+                    "-idirafter <(module_root_dir)/shims"
                 ],
                 "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
                 "MACOSX_DEPLOYMENT_TARGET": "10.13"
