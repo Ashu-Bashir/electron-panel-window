@@ -8,21 +8,21 @@
     "start": "electron ./test/app/index.js",
     "configure": "node-gyp configure",
     "patch": "node scripts/patch-nan.js",
-    "prepare": "npm run patch && node-gyp rebuild --release --target=43.0.0 --dist-url=https://electronjs.org/headers",
-    "build": "npm run patch && node-gyp rebuild --release --target=43.0.0 --dist-url=https://electronjs.org/headers",
+    "prepare": "npm run patch && node-gyp rebuild --release --target=45.2.3 --dist-url=https://electronjs.org/headers",
+    "build": "npm run patch && node-gyp rebuild --release --target=45.2.3 --dist-url=https://electronjs.org/headers",
     "test": "mocha",
-    "postinstall": "npm run patch && node-gyp rebuild --release --target=43.0.0 --dist-url=https://electronjs.org/headers",
-    "install": "npm run patch && node-gyp rebuild --release --target=43.0.0 --dist-url=https://electronjs.org/headers"
+    "postinstall": "npm run patch && node-gyp rebuild --release --target=45.2.3 --dist-url=https://electronjs.org/headers",
+    "install": "npm run patch && node-gyp rebuild --release --target=45.2.3 --dist-url=https://electronjs.org/headers"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.1",
-    "electron": "^43.0.0",
+    "electron": "^45.2.3",
     "mocha": "^10.8.2",
     "node-gyp": "11.4.2"
   },
   "dependencies": {
     "bindings": "1.5.0",
-    "nan": "2.27.0"
+    "nan": "2.30.0"
   },
   "repository": {
     "type": "git",
